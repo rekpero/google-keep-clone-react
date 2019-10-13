@@ -1,47 +1,44 @@
 import * as React from "react";
-import autosize from "autosize";
-import photo from "../assets/images/photo.svg";
-import bulletList from "../assets/images/bullet-list.svg";
 import Note from "../components/notecomponent";
 import { INote, IListItem } from "../models/note";
+import AddNoteComponent from "../components/addnotecomponent";
+import search from "../assets/images/search.svg";
 
 interface ILoginState {
   notes: INote[];
+  filteredNotes: INote[];
   title: string;
   payload: string[];
   list: IListItem[];
   imageUrl: string;
   type: string;
+  currentNote: INote;
+  search: string;
 }
 
 export default class DashboardComponent extends React.Component<
   {},
   ILoginState
 > {
-  private textarea!: HTMLTextAreaElement;
-  private inputImage!: HTMLInputElement;
   constructor(props: any) {
     super(props);
     this.state = {
       notes: [],
+      filteredNotes: [],
       title: "",
       payload: [],
       list: [],
       imageUrl: "",
-      type: "text"
+      type: "text",
+      currentNote: {
+        title: "",
+        payload: [],
+        list: [],
+        imageUrl: "",
+        type: "text"
+      },
+      search: ""
     };
-  }
-
-  componentDidMount() {
-    if (this.state.type === "text") {
-      this.textarea.focus();
-      autosize(this.textarea);
-    }
-  }
-  componentDidUpdate() {
-    if (this.state.type === "text") {
-      autosize(this.textarea);
-    }
   }
 
   loadTitle = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,10 +46,75 @@ export default class DashboardComponent extends React.Component<
       title: event.target.value
     });
   };
+  loadSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    let search = event.target.value;
+    console.log(
+      search,
+      search === ""
+        ? this.state.notes
+        : this.state.notes.length === 0
+        ? []
+        : this.state.notes.filter(note =>
+            (note.title.indexOf(search) !== -1) ||
+            ((note.type === "text" ||
+            note.type === "image")
+              ? note.payload
+                  .reduce((prev, curr) => prev + " " + curr)
+                  .indexOf(search) !== -1
+              : null) || ((note.type === "checklist")
+              ? note.list
+                  .map(item => item.item)
+                  .reduce((prev, curr) => prev + " " + curr)
+                  .indexOf(search) !== -1
+              : null)
+          )
+    );
+    this.setState({
+      search: search,
+      filteredNotes: search === "" ? this.state.notes : this.state.notes.length === 0 ? [] : this.state.notes.filter(note =>
+          (note.title.indexOf(search) !== -1) ||
+          ((note.type === "text" ||
+          note.type === "image")
+            ? note.payload
+                .reduce((prev, curr) => prev + " " + curr)
+                .indexOf(search) !== -1
+            : null) || ((note.type === "checklist")
+            ? note.list
+                .map(item => item.item)
+                .reduce((prev, curr) => prev + " " + curr)
+                .indexOf(search) !== -1
+            : null)
+        )
+    });
+  };
+
+  loadCurrentNoteTitle = (event: React.ChangeEvent<HTMLInputElement>) => {
+    this.setState({
+      currentNote: {
+        title: event.target.value,
+        payload: this.state.currentNote.payload,
+        list: this.state.currentNote.list,
+        imageUrl: this.state.currentNote.imageUrl,
+        type: this.state.currentNote.type
+      }
+    });
+  };
 
   loadPayload = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     this.setState({
       payload: event.target.value.split("\n")
+    });
+  };
+
+  loadCurrentNotePayload = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    this.setState({
+      currentNote: {
+        title: this.state.currentNote.title,
+        payload: event.target.value.split("\n"),
+        list: this.state.currentNote.list,
+        imageUrl: this.state.currentNote.imageUrl,
+        type: this.state.currentNote.type
+      }
     });
   };
 
@@ -65,26 +127,61 @@ export default class DashboardComponent extends React.Component<
       type: this.state.type,
       imageUrl: this.state.imageUrl
     });
-    this.setState({ notes: note, title: "", payload: [], type: "text" }, () => {
-      console.log(this.state.notes);
-    });
+    this.setState(
+      {
+        notes: note,
+        filteredNotes: note,
+        title: "",
+        payload: [],
+        type: "text"
+      },
+      () => {
+        console.log(this.state.notes);
+      }
+    );
   };
 
-  handleImageUpload = () => {
-    this.inputImage.click();
+  editNote = (index: number, note: INote) => {
+    let notes = this.state.notes;
+    notes[index] = note;
+    this.setState({ notes: notes, filteredNotes: notes });
   };
 
   createList = () => {
     let list = [];
     list.push({ item: "", checked: false });
-    this.setState({ list: list, type: "checklist", imageUrl: "", payload: [] }, () => {
-      console.log(this.state.type);
+    this.setState({ list: list, type: "checklist", imageUrl: "", payload: [] });
+  };
+  createListCurrentNote = () => {
+    let list = [];
+    list.push({ item: "", checked: false });
+    this.setState({
+      currentNote: {
+        list: list,
+        type: "checklist",
+        imageUrl: "",
+        payload: [],
+        title: this.state.currentNote.title
+      }
     });
   };
   addListItem = () => {
     let list = this.state.list;
     list.push({ item: "", checked: false });
     this.setState({ list: list });
+  };
+  addListItemCurrentNote = () => {
+    let list = this.state.list;
+    list.push({ item: "", checked: false });
+    this.setState({
+      currentNote: {
+        list: list,
+        title: this.state.currentNote.title,
+        payload: this.state.currentNote.payload,
+        type: this.state.currentNote.type,
+        imageUrl: this.state.currentNote.imageUrl
+      }
+    });
   };
 
   loadListItemText = (
@@ -96,6 +193,23 @@ export default class DashboardComponent extends React.Component<
     this.setState({ list: list });
   };
 
+  loadListItemTextCurrentNote = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    let list = this.state.currentNote.list;
+    list[index].item = event.target.value;
+    this.setState({
+      currentNote: {
+        list: list,
+        title: this.state.currentNote.title,
+        payload: this.state.currentNote.payload,
+        type: this.state.currentNote.type,
+        imageUrl: this.state.currentNote.imageUrl
+      }
+    });
+  };
+
   loadListItemCheckbox = (
     event: React.ChangeEvent<HTMLInputElement>,
     index: number
@@ -103,6 +217,23 @@ export default class DashboardComponent extends React.Component<
     let list = this.state.list;
     list[index].checked = event.target.checked;
     this.setState({ list: list });
+  };
+
+  loadListItemCheckboxCurrentNote = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    let list = this.state.currentNote.list;
+    list[index].checked = event.target.checked;
+    this.setState({
+      currentNote: {
+        list: list,
+        title: this.state.currentNote.title,
+        payload: this.state.currentNote.payload,
+        type: this.state.currentNote.type,
+        imageUrl: this.state.currentNote.imageUrl
+      }
+    });
   };
 
   loadImage = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,126 +245,94 @@ export default class DashboardComponent extends React.Component<
     console.log(URL.createObjectURL(event.currentTarget.files![0]));
   };
 
+  loadImageCurrentNote = (event: React.ChangeEvent<HTMLInputElement>) => {
+    this.setState({
+      currentNote: {
+        imageUrl: URL.createObjectURL(event.currentTarget.files![0]),
+        type: "image",
+        list: [],
+        title: this.state.currentNote.title,
+        payload: this.state.currentNote.payload
+      }
+    });
+    console.log(URL.createObjectURL(event.currentTarget.files![0]));
+  };
+  removeNote = (index: number) => {
+    let notes = this.state.notes;
+    notes.splice(index, 1);
+    this.setState({ notes: notes, filteredNotes: notes });
+  };
+
+  changeCurrentNote = (note: INote) => {
+    this.setState({ currentNote: note });
+  };
+
   render() {
     return (
-      <div className="bg-dark border-top ">
-        <div className="container text-white">
-          <div className="d-flex justify-content-center">
-            <div className="my-3 rounded p-3 border col-md-6 shadow">
-              <div className="mb-2">
-                <input
-                  type="text"
-                  placeholder="Title"
-                  className="border-0 bg-dark text-white w-100"
-                  value={this.state.title}
-                  onChange={this.loadTitle}
-                />
-              </div>
-              {this.state.type === "image" ? (
-                <div className="text-center">
-                  <img
-                    src={this.state.imageUrl}
-                    alt="upload"
-                    style={{ height: 200 }}
-                    className="img-fluid"
-                  />
-                </div>
-              ) : null}
-              <div className="mb-2">
-                {this.state.type === "text" || this.state.type === "image" ? (
-                  <textarea
-                    rows={1}
-                    ref={c => (this.textarea = c!)}
-                    placeholder="Take a note"
-                    className="border-0 bg-dark text-white w-100"
-                    value={
-                      this.state.payload.length === 0
-                        ? ""
-                        : this.state.payload.reduce(
-                            (prev, curr) => prev + "\n" + curr
-                          )
-                    }
-                    onChange={this.loadPayload}
-                  />
-                ) : this.state.type === "checklist" ? (
-                  <div>
-                    {this.state.list.map((listItem, index) => (
-                      <div className="d-flex" key={index}>
-                        <div className="input-group-prepend">
-                          <div className="input-group-text bg-dark border-0">
-                            <input
-                              type="checkbox"
-                              aria-label="Checkbox for following text input"
-                              checked={listItem.checked}
-                              onChange={e =>
-                                this.loadListItemCheckbox(e, index)
-                              }
-                            />
-                          </div>
-                        </div>
-                        <input
-                          type="text"
-                          placeholder="List item"
-                          className="border-0 bg-dark text-white w-100"
-                          style={{
-                            textDecorationLine: listItem.checked
-                              ? "line-through"
-                              : "none",
-                            textDecorationStyle: "solid"
-                          }}
-                          value={listItem.item}
-                          onChange={e => this.loadListItemText(e, index)}
-                        />
-                      </div>
-                    ))}
-                    <div
-                      className="text-secondary px-2 mt-1"
-                      style={{ fontSize: 16 }}
-                      onClick={this.addListItem}
-                    >
-                      + Add list
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-              <div className="d-flex align-items-center">
-                <img
-                  src={photo}
-                  alt="add"
-                  className="ml-2 mr-4"
-                  style={{ height: 16, width: 16 }}
-                  onClick={this.handleImageUpload}
-                />
-                <input
-                  type="file"
-                  style={{ display: "none" }}
-                  ref={input => (this.inputImage = input!)}
-                  onChange={this.loadImage}
-                />
-                <img
-                  src={bulletList}
-                  alt="add list"
-                  className="mr-4"
-                  style={{ height: 16, width: 16 }}
-                  onClick={this.createList}
-                />
-                <button
-                  className="btn btn-info ml-auto"
-                  type="button"
-                  style={{ borderRadius: 100, margin: 0 }}
-                  onClick={this.saveNote}
+      <div>
+        <div className="container-fluid bg-dark text-center">
+          <div className="container">
+            <div className="input-group col-md-4 p-2 px-auto">
+              <div className="input-group-prepend">
+                <span
+                  className="input-group-text bg-white border-right-0"
+                  id="search"
                 >
-                  Save
-                </button>
+                  <img
+                    src={search}
+                    alt="search"
+                    style={{ height: 16, width: 16 }}
+                  />
+                </span>
               </div>
+              <input
+                type="text"
+                className="form-control border-left-0"
+                placeholder="Search"
+                aria-label="search"
+                aria-describedby="search"
+                value={this.state.search}
+                onChange={this.loadSearch}
+              />
             </div>
           </div>
+        </div>
+        <div className="container text-white">
+          <div className="d-flex justify-content-center">
+            <AddNoteComponent
+              title={this.state.title}
+              payload={this.state.payload}
+              list={this.state.list}
+              imageUrl={this.state.imageUrl}
+              type={this.state.type}
+              createList={this.createList}
+              loadImage={this.loadImage}
+              addListItem={this.addListItem}
+              loadListItemText={this.loadListItemText}
+              loadListItemCheckbox={this.loadListItemCheckbox}
+              loadPayload={this.loadPayload}
+              loadTitle={this.loadTitle}
+              saveNote={this.saveNote}
+            />
+          </div>
           <div className="my-3 row justify-content-around">
-            {this.state.notes.map(note => (
+            {this.state.filteredNotes.map((note, index) => (
               <Note
+                index={index}
                 note={note}
-                key={note.title}
+                key={index}
                 changeListChecked={this.loadListItemCheckbox}
+                changeCurrentNote={this.changeCurrentNote}
+                currentNote={this.state.currentNote}
+                createList={this.createListCurrentNote}
+                loadImage={this.loadImageCurrentNote}
+                addListItem={this.addListItemCurrentNote}
+                loadListItemText={this.loadListItemTextCurrentNote}
+                loadListItemCheckbox={this.loadListItemCheckboxCurrentNote}
+                loadPayload={this.loadCurrentNotePayload}
+                loadTitle={this.loadCurrentNoteTitle}
+                editNote={this.editNote}
+                removeNote={this.removeNote}
               />
             ))}
           </div>

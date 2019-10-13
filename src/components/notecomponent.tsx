@@ -2,17 +2,38 @@ import * as React from "react";
 import edit from "../assets/images/edit.svg";
 import remove from "../assets/images/remove.svg";
 import { INote } from "../models/note";
+import EditNoteModal from "./editnotemodal";
 
 interface INoteProps {
+  index: number;
   note: INote;
+  currentNote: INote;
   changeListChecked: (
     event: React.ChangeEvent<HTMLInputElement>,
     index: number
   ) => void;
+  changeCurrentNote: (note: INote) => void;
+  createList: () => void;
+  loadImage: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  addListItem: () => void;
+  loadListItemText: (
+    event: React.ChangeEvent<HTMLInputElement>,
+    index: number
+  ) => void;
+  loadListItemCheckbox: (
+    event: React.ChangeEvent<HTMLInputElement>,
+    index: number
+  ) => void;
+  loadPayload: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  loadTitle: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  editNote: (index: number, note: INote) => void;
+  removeNote: (index: number) => void;
 }
 const Note: React.FC<INoteProps> = (props: INoteProps) => {
+  let modal: HTMLButtonElement;
+
   return (
-    <div className="m-1 rounded p-3 border col-md-3 shadow d-flex flex-column">
+    <div className="m-1 rounded p-3 border col-md-3 shadow d-flex flex-column bg-dark">
       <div className="mb-2">
         <b>{props.note.title}</b>
       </div>
@@ -58,12 +79,47 @@ const Note: React.FC<INoteProps> = (props: INoteProps) => {
       ) : null}
       <div className="d-flex justify-content-between mt-auto">
         <div>
-          <img src={edit} alt="edit" style={{ height: 16, width: 16 }} />
+          <img
+            src={edit}
+            alt="edit"
+            style={{ height: 16, width: 16 }}
+            onClick={e => {
+              props.changeCurrentNote(props.note);
+              modal.click();
+            }}
+          />
+          <button
+            style={{ display: "none" }}
+            data-toggle="modal"
+            data-target="#exampleModalCenter"
+            ref={c => (modal = c!)}
+          ></button>
         </div>
         <div>
-          <img src={remove} alt="remove" style={{ height: 16, width: 16 }} />
+          <img
+            src={remove}
+            alt="remove"
+            style={{ height: 16, width: 16 }}
+            onClick={e => {
+              props.removeNote(props.index);
+            }}
+          />
         </div>
       </div>
+      {/* 
+      <!-- Modal --> */}
+      <EditNoteModal
+        index={props.index}
+        note={props.currentNote}
+        createList={props.createList}
+        loadImage={props.loadImage}
+        addListItem={props.addListItem}
+        loadListItemText={props.loadListItemText}
+        loadListItemCheckbox={props.loadListItemCheckbox}
+        loadPayload={props.loadPayload}
+        loadTitle={props.loadTitle}
+        editNote={props.editNote}
+      />
     </div>
   );
 };

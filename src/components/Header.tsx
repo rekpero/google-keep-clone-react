@@ -27,23 +27,6 @@ const Header: React.FC<RouteComponentProps> = (props: RouteComponentProps) => {
             <span className="navbar-toggler-icon" />
           </button>
           <div id="navbarNavDropdown" className="navbar-collapse collapse">
-            <div className="input-group col-md-6">
-              <div className="input-group-prepend">
-                <span
-                  className="input-group-text bg-white border-right-0"
-                  id="search"
-                >
-                  @
-                </span>
-              </div>
-              <input
-                type="text"
-                className="form-control border-left-0"
-                placeholder="Search"
-                aria-label="search"
-                aria-describedby="search"
-              />
-            </div>
             <ul className="navbar-nav ml-auto">
               {localStorage.getItem("isLoggedIn") === "false" ? (
                 <li className="nav-item">
