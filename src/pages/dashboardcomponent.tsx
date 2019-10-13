@@ -3,12 +3,13 @@ import autosize from "autosize";
 import photo from "../assets/images/photo.svg";
 import bulletList from "../assets/images/bullet-list.svg";
 import Note from "../components/notecomponent";
-import { INote } from "../models/note";
+import { INote, IListItem } from "../models/note";
 
 interface ILoginState {
   notes: INote[];
   title: string;
   payload: string[];
+  list: IListItem[];
   imageUrl: string;
   type: string;
 }
@@ -25,17 +26,22 @@ export default class DashboardComponent extends React.Component<
       notes: [],
       title: "",
       payload: [],
+      list: [],
       imageUrl: "",
       type: "text"
     };
   }
 
   componentDidMount() {
-    this.textarea.focus();
-    autosize(this.textarea);
+    if (this.state.type === "text") {
+      this.textarea.focus();
+      autosize(this.textarea);
+    }
   }
   componentDidUpdate() {
-    autosize(this.textarea);
+    if (this.state.type === "text") {
+      autosize(this.textarea);
+    }
   }
 
   loadTitle = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,6 +61,7 @@ export default class DashboardComponent extends React.Component<
     note.push({
       title: this.state.title,
       payload: this.state.payload,
+      list: this.state.list,
       type: this.state.type,
       imageUrl: this.state.imageUrl
     });
@@ -67,10 +74,42 @@ export default class DashboardComponent extends React.Component<
     this.inputImage.click();
   };
 
+  createList = () => {
+    let list = [];
+    list.push({ item: "", checked: false });
+    this.setState({ list: list, type: "checklist", imageUrl: "", payload: [] }, () => {
+      console.log(this.state.type);
+    });
+  };
+  addListItem = () => {
+    let list = this.state.list;
+    list.push({ item: "", checked: false });
+    this.setState({ list: list });
+  };
+
+  loadListItemText = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    let list = this.state.list;
+    list[index].item = event.target.value;
+    this.setState({ list: list });
+  };
+
+  loadListItemCheckbox = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    let list = this.state.list;
+    list[index].checked = event.target.checked;
+    this.setState({ list: list });
+  };
+
   loadImage = (event: React.ChangeEvent<HTMLInputElement>) => {
     this.setState({
       imageUrl: URL.createObjectURL(event.currentTarget.files![0]),
-      type: "image"
+      type: "image",
+      list: []
     });
     console.log(URL.createObjectURL(event.currentTarget.files![0]));
   };
@@ -101,20 +140,61 @@ export default class DashboardComponent extends React.Component<
                 </div>
               ) : null}
               <div className="mb-2">
-                <textarea
-                  rows={1}
-                  ref={c => (this.textarea = c!)}
-                  placeholder="Take a note"
-                  className="border-0 bg-dark text-white w-100"
-                  value={
-                    this.state.payload.length === 0
-                      ? ""
-                      : this.state.payload.reduce(
-                          (prev, curr) => prev + "\n" + curr
-                        )
-                  }
-                  onChange={this.loadPayload}
-                />
+                {this.state.type === "text" || this.state.type === "image" ? (
+                  <textarea
+                    rows={1}
+                    ref={c => (this.textarea = c!)}
+                    placeholder="Take a note"
+                    className="border-0 bg-dark text-white w-100"
+                    value={
+                      this.state.payload.length === 0
+                        ? ""
+                        : this.state.payload.reduce(
+                            (prev, curr) => prev + "\n" + curr
+                          )
+                    }
+                    onChange={this.loadPayload}
+                  />
+                ) : this.state.type === "checklist" ? (
+                  <div>
+                    {this.state.list.map((listItem, index) => (
+                      <div className="d-flex" key={index}>
+                        <div className="input-group-prepend">
+                          <div className="input-group-text bg-dark border-0">
+                            <input
+                              type="checkbox"
+                              aria-label="Checkbox for following text input"
+                              checked={listItem.checked}
+                              onChange={e =>
+                                this.loadListItemCheckbox(e, index)
+                              }
+                            />
+                          </div>
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="List item"
+                          className="border-0 bg-dark text-white w-100"
+                          style={{
+                            textDecorationLine: listItem.checked
+                              ? "line-through"
+                              : "none",
+                            textDecorationStyle: "solid"
+                          }}
+                          value={listItem.item}
+                          onChange={e => this.loadListItemText(e, index)}
+                        />
+                      </div>
+                    ))}
+                    <div
+                      className="text-secondary px-2 mt-1"
+                      style={{ fontSize: 16 }}
+                      onClick={this.addListItem}
+                    >
+                      + Add list
+                    </div>
+                  </div>
+                ) : null}
               </div>
               <div className="d-flex align-items-center">
                 <img
@@ -135,6 +215,7 @@ export default class DashboardComponent extends React.Component<
                   alt="add list"
                   className="mr-4"
                   style={{ height: 16, width: 16 }}
+                  onClick={this.createList}
                 />
                 <button
                   className="btn btn-info ml-auto"
@@ -149,7 +230,11 @@ export default class DashboardComponent extends React.Component<
           </div>
           <div className="my-3 row justify-content-around">
             {this.state.notes.map(note => (
-              <Note note={note} key={note.title} />
+              <Note
+                note={note}
+                key={note.title}
+                changeListChecked={this.loadListItemCheckbox}
+              />
             ))}
           </div>
         </div>

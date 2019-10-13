@@ -5,6 +5,10 @@ import { INote } from "../models/note";
 
 interface INoteProps {
   note: INote;
+  changeListChecked: (
+    event: React.ChangeEvent<HTMLInputElement>,
+    index: number
+  ) => void;
 }
 const Note: React.FC<INoteProps> = (props: INoteProps) => {
   return (
@@ -14,19 +18,44 @@ const Note: React.FC<INoteProps> = (props: INoteProps) => {
       </div>
       {props.note.type === "image" && props.note.imageUrl !== "" ? (
         <div className="text-center">
-          <img
-            src={props.note.imageUrl}
-            alt="upload"
-            style={{ height: 200 }}
-            className="img-fluid"
-          />
+          <img src={props.note.imageUrl} alt="upload" className="img-fluid" />
         </div>
       ) : null}
-      <div className="mb-2" style={{ overflow: "hidden" }}>
-        {props.note.payload.map(load => (
-          <div key={load}>{load}</div>
-        ))}
-      </div>
+      {props.note.type === "text" || "image" ? (
+        <div className="mb-2 text-truncate">
+          {props.note.payload.map(load => (
+            <div key={load}>{load}</div>
+          ))}
+        </div>
+      ) : null}
+      {props.note.type === "checklist" ? (
+        <div className="mb-2">
+          {props.note.list.map((listItem, index) => (
+            <div className="d-flex" key={index}>
+              <div className="input-group-prepend">
+                <div className="input-group-text bg-dark border-0">
+                  <input
+                    type="checkbox"
+                    aria-label="Checkbox for following text input"
+                    checked={listItem.checked}
+                    onChange={e => props.changeListChecked(e, index)}
+                  />
+                </div>
+              </div>
+              <div
+                style={{
+                  textDecorationLine: listItem.checked
+                    ? "line-through"
+                    : "none",
+                  textDecorationStyle: "solid"
+                }}
+              >
+                {listItem.item}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
       <div className="d-flex justify-content-between mt-auto">
         <div>
           <img src={edit} alt="edit" style={{ height: 16, width: 16 }} />
